@@ -1,3 +1,4 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -15,6 +16,14 @@ class HomeView extends GetView<HomeController> {
     final Color mainGreen = const Color(0xFF316B5C);
     final double cardHeight = 290;
     final double cardRadius = 22;
+
+    final List<YoutubeChannelData> dummyYoutubeData = [
+      YoutubeChannelData("Dr. Sarah Health", 25400),
+      YoutubeChannelData("Neuro Care", 18700),
+      YoutubeChannelData("Face Recovery", 14200),
+      YoutubeChannelData("Physio Therapy", 11300),
+      YoutubeChannelData("Bell's Palsy Support", 9200),
+    ];
     
 
     // List card data
@@ -32,7 +41,7 @@ class HomeView extends GetView<HomeController> {
       ),
       _HomeCardData(
         bgColor: const Color(0xFFF7C6C6),
-        image: 'assets/images/deteksi.png',
+        image: 'assets/images/face1.png',
         title: "Detect your face\nand start your\nrecovery journey\nnow!",
         subtitle: "Fast Scan",
         buttonText: "DETECT MY FACE",
@@ -55,7 +64,7 @@ class HomeView extends GetView<HomeController> {
               child: Text(
                 'Welcome to Therapalsy !',
                 style: TextStyle(
-                  fontSize: 31,
+                  fontSize: 28,
                   fontWeight: FontWeight.w700,
                   color: mainGreen,
                 ),
@@ -131,14 +140,103 @@ class HomeView extends GetView<HomeController> {
             ),
 
             const SizedBox(height: 20),
+            
+            // Grafik Batang
+            const SizedBox(height: 28),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 22),
+              child: Text(
+                "Channel YouTube Terkait Bell's Palsy",
+                style: TextStyle(
+                  fontSize: 19,
+                  fontWeight: FontWeight.w700,
+                  color: mainGreen,
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Container(
+              height: 250,
+              padding: const EdgeInsets.all(16),
+              margin: const EdgeInsets.symmetric(horizontal: 18),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: mainGreen.withOpacity(0.22), width: 1.5),
+              ),
+              child: BarChart(
+                BarChartData(
+                  barTouchData: BarTouchData(enabled: true),
+                  titlesData: FlTitlesData(
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (value, meta) => Text(
+                          '${value.toInt()}k',
+                          style: TextStyle(
+                            color: mainGreen,
+                            fontSize: 10,
+                          ),
+                        ),
+                        reservedSize: 40,
+                      ),
+                    ),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (value, meta) {
+                          final index = value.toInt();
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text(
+                              dummyYoutubeData[index].channel,
+                              style: TextStyle(
+                                color: mainGreen,
+                                fontSize: 10,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  gridData: FlGridData(show: false),
+                  borderData: FlBorderData(
+                    border: Border.all(color: mainGreen.withOpacity(0.2)),
+                  ),
+                  barGroups: dummyYoutubeData
+                      .asMap()
+                      .entries
+                      .map(
+                        (e) => BarChartGroupData(
+                          x: e.key,
+                          barRods: [
+                            BarChartRodData(
+                              toY: e.value.viewCount.toDouble(),
+                              color: mainGreen,
+                              width: 22,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ],
+                        ),
+                      )
+                      .toList(),
+                ),
+              ),
+            ),
           ],
+          
+          
         ),
       ),
+      
       // Bottom Navigation Bar
       bottomNavigationBar: _HomeBottomNav(mainGreen: mainGreen),
     );
   }
 }
+
 
 // --- Widget untuk Card Pink di Carousel ---
 class _HomeCardData {
@@ -185,8 +283,9 @@ class _HomePinkCard extends StatelessWidget {
           // Image
           Positioned(
             right: 0,
+            left: 60,
             top: 0,
-            bottom: 0,
+            bottom:0,
             child: ClipRRect(
               borderRadius: BorderRadius.only(
                 topRight: Radius.circular(borderRadius),
@@ -194,8 +293,9 @@ class _HomePinkCard extends StatelessWidget {
               ),
               child: Image.asset(
                 data.image,
-                width: 120,
-                fit: BoxFit.cover,
+                width: 350,
+                fit: BoxFit.contain,
+
               ),
             ),
           ),
@@ -407,4 +507,10 @@ class _HomeBottomNav extends StatelessWidget {
       },
     );
   }
+}
+class YoutubeChannelData {
+  final String channel;
+  final int viewCount;
+
+  YoutubeChannelData(this.channel, this.viewCount);
 }

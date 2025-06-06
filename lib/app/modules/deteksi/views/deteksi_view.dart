@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'camera_screen.dart';
-import '../../home/views/home_view.dart'; // Pastikan import HomeView
+import 'package:therapalsy_screen_muti/app/modules/home/views/home_view.dart';
+import 'camera_screen.dart'; // Pastikan file camera_screen.dart sudah ada
 
 class DeteksiView extends StatelessWidget {
   const DeteksiView({super.key});
@@ -15,16 +15,14 @@ class DeteksiView extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
+            // Header
             Padding(
               padding: const EdgeInsets.only(top: 22, left: 8, right: 8),
               child: Row(
                 children: [
                   IconButton(
                     icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
-                    onPressed: () {
-                      // Langsung navigasi ke HomeView tanpa cek canPop
-                      Get.offAll(() => const HomeView());
-                    },
+                    onPressed: () => Get.offAll(() => const HomeView())
                   ),
                   const Expanded(
                     child: Center(
@@ -49,10 +47,12 @@ class DeteksiView extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 122),
+            const SizedBox(height: 24),
+            // Box peringatan
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 32.0),
               child: Container(
+                width: double.infinity,
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.10),
                   borderRadius: BorderRadius.circular(20),
@@ -87,7 +87,7 @@ class DeteksiView extends StatelessWidget {
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: const [
-                              Icon(Icons.lightbulb_outline, color: Colors.black87, size: 26),
+                              Icon(Icons.lightbulb_outline, color: Colors.black87, size: 24),
                               SizedBox(width: 12),
                               Expanded(
                                 child: Text(
@@ -104,10 +104,10 @@ class DeteksiView extends StatelessWidget {
                           SizedBox(height: 16),
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Icon(Icons.face_6_outlined, color: Colors.black87, size: 26),
-                              const SizedBox(width: 12),
-                              const Expanded(
+                            children: const [
+                              Icon(Icons.face_6_outlined, color: Colors.black87, size: 24),
+                              SizedBox(width: 12),
+                              Expanded(
                                 child: Text(
                                   'Make sure you face the camera with the correct facial position.',
                                   style: TextStyle(
@@ -119,13 +119,13 @@ class DeteksiView extends StatelessWidget {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16),
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Icon(Icons.info_outline, color: Colors.black87, size: 26),
-                              const SizedBox(width: 12),
-                              const Expanded(
+                            children: const [
+                              Icon(Icons.info_outline, color: Colors.black87, size: 24),
+                              SizedBox(width: 12),
+                              Expanded(
                                 child: Text(
                                   'The application will provide instructions for performing facial movements.',
                                   style: TextStyle(
@@ -145,13 +145,15 @@ class DeteksiView extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 70),
+            const SizedBox(height: 32),
+            // Tombol Start Detection
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 36),
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
+                    // Navigasi ke halaman kamera
                     Get.to(() => const CameraScreen());
                   },
                   style: ElevatedButton.styleFrom(
@@ -171,29 +173,6 @@ class DeteksiView extends StatelessWidget {
                       letterSpacing: 1.1,
                     ),
                   ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 48),
-            const Text(
-              'Follow\nthe Facial Movement Instructions!',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 17,
-                color: Colors.white,
-                fontWeight: FontWeight.w400,
-                height: 1.2,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              width: 70,
-              height: 70,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.5),
-                  width: 5,
                 ),
               ),
             ),

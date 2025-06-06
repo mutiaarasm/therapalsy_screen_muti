@@ -4,7 +4,6 @@ import '../../deteksi/views/deteksi_view.dart';
 import '../../home/views/home_view.dart';
 import '../../profile/views/profile_view.dart';
 import '../../progress/views/progress_view.dart';
-import '../controllers/terapi_controller.dart';
 import 'terapi_bellsy.dart';
 
 class TerapiView extends StatelessWidget {
@@ -12,36 +11,31 @@ class TerapiView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color mainGreen = const Color(0xFF316B5C);
+    final Color mainGreen = const Color(0xFF306A5A);
+    final double screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
       backgroundColor: Colors.white,
       extendBody: true,
       body: Stack(
         children: [
-          // Gradient background
+          // Background hijau atas
           Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFFE6C8CE), // pink soft
-                  Color(0xFFF4F6F7), // putih
-                ],
-              ),
-            ),
+            height: screenHeight * 0.37, // agar hijau cukup tinggi
+            width: double.infinity,
+            color: mainGreen,
           ),
+          // Konten utama
           SafeArea(
             child: Column(
               children: [
-                // Custom AppBar
+                // AppBar custom
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   child: Row(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87),
+                        icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
                         onPressed: () => Get.back(),
                       ),
                       const Expanded(
@@ -52,12 +46,11 @@ class TerapiView extends StatelessWidget {
                               fontSize: 20,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 2,
-                              color: Colors.black,
+                              color: Colors.white,
                             ),
                           ),
                         ),
                       ),
-                      // Agar judul tetap center
                       Opacity(
                         opacity: 0,
                         child: IconButton(
@@ -68,19 +61,30 @@ class TerapiView extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 12),
-                // Card Gambar
+                // Spacer agar gambar turun ke bawah
+                const SizedBox(height: 20),
+                // Gambar dengan card putih rounded, tinggi lebih besar
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: Container(
-                      color: const Color(0xFFF2F2F2),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(22),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.04),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(22),
                       child: Image.asset(
                         'assets/images/terapi.png',
                         fit: BoxFit.cover,
                         width: double.infinity,
-                        height: 260,
+                        height: 320, // Lebih panjang ke bawah
                       ),
                     ),
                   ),
@@ -88,7 +92,7 @@ class TerapiView extends StatelessWidget {
                 const SizedBox(height: 28),
                 // Deskripsi
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 28),
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
                   child: Text(
                     'Try the therapy for 7 days, and take a picture of your face after doing the therapy.',
                     textAlign: TextAlign.center,
@@ -103,7 +107,7 @@ class TerapiView extends StatelessWidget {
                 const SizedBox(height: 32),
                 // Tombol Start Exercise
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 28),
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
                   child: SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -140,7 +144,7 @@ class TerapiView extends StatelessWidget {
   }
 }
 
-// Bottom Navigation Bar sesuai gambar
+// Bottom Navigation Bar
 class _TerapiBottomNav extends StatelessWidget {
   final Color mainGreen;
   const _TerapiBottomNav({required this.mainGreen});
@@ -177,16 +181,12 @@ class _TerapiBottomNav extends StatelessWidget {
             Get.offAll(() => const HomeView());
             break;
           case 1:
-            // Navigasi ke deteksi
             Get.offAll(() => const DeteksiView());
             break;
           case 2:
-            // Navigasi ke progress
             Get.offAll(() => const ProgressView());
             break;
           case 3:
-          
-            // Navigasi ke ProfileView
             Get.offAll(() => const ProfileView());
             break;
         }
@@ -194,4 +194,3 @@ class _TerapiBottomNav extends StatelessWidget {
     );
   }
 }
-

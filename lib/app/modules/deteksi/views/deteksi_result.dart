@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
 import '../../home/views/home_view.dart';
 
 class DeteksiResult extends StatelessWidget {
   final bool isPositive; // true = positif, false = negatif
+  final double? percentage; // opsional: persentase hasil deteksi
 
-  const DeteksiResult({super.key, required this.isPositive});
+  const DeteksiResult({
+    super.key,
+    required this.isPositive,
+    this.percentage,
+  });
 
   @override
   Widget build(BuildContext context) {
+    // Warna hijau utama sesuai Figma/jungle green
     final Color mainGreen = const Color(0xFF306A5A);
-    final Color mainPink = const Color(0xFFFF7B7B);
+    // Warna pink highlight untuk hasil positif
+    final Color highlightPink = const Color(0xFFFF9B9B);
 
     return Container(
       decoration: const BoxDecoration(
@@ -28,129 +34,154 @@ class DeteksiResult extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Bagian pink atas dengan icon centang
+              // Bagian atas: hijau dengan icon centang
               Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: mainPink,
+                  color: mainGreen,
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
                 ),
-                padding: const EdgeInsets.only(top: 32, bottom: 18),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 90,
-                      height: 90,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(Icons.check, color: mainPink, size: 48),
+                padding: const EdgeInsets.only(top: 40, bottom: 40),
+                child: Center(
+                  child: Container(
+                    width: 70,
+                    height: 70,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
                     ),
-                    const SizedBox(height: 18),
-                    
-                  ],
+                    child: Icon(
+                      Icons.check,
+                      color: mainGreen,
+                      size: 38,
+                    ),
+                  ),
                 ),
               ),
-               //scan completed
-              const SizedBox(height: 20, ),
-                Text(
-                'SCAN COMPLETED !',
-                style: TextStyle(
-                color: mainPink,
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-                letterSpacing: 1.2,
+
+              // Konten bagian putih
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 24),
+
+                    // Judul "SCAN COMPLETED !"
+                    Text(
+                      'SCAN COMPLETED !',
+                      style: TextStyle(
+                        color: highlightPink,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        letterSpacing: 1.0,
                       ),
                     ),
-              // Kalimat hasil dengan highlight positif/negatif
+
+                    const SizedBox(height: 16),
+
+                    // Hasil deteksi
                     RichText(
                       textAlign: TextAlign.center,
                       text: TextSpan(
-                        style: const TextStyle(
-                          color: Color(0xFFFF7B7B),
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
+                        style: TextStyle(
+                          color: highlightPink,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
                           height: 1.4,
                         ),
                         children: [
                           const TextSpan(text: 'Detection shows,\nthat you are '),
                           TextSpan(
-                            text: isPositive ? 'Positive' : 'Negative',
+                            text: _getResultText(),
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: isPositive ? const Color(0xFFFF7B7B) : mainGreen,
+                              color: isPositive ? highlightPink : mainGreen,
+                              fontSize: 16,
                             ),
                           ),
-                          const TextSpan(text: ' for Bell\'s Palsy'),
+                          if (isPositive)
+                            const TextSpan(text: ' for Bell\'s Palsy'),
                         ],
                       ),
                     ),
-              // Ways to reduce section
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 132, vertical: 126),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.info_outline, color: mainPink, size: 20),
-                        const SizedBox(width: 7),
-                        Text(
-                          'Ways to reduce',
+
+                    const SizedBox(height: 36),
+
+                    // Section "Ways to reduce"
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.info_outline,
+                                color: highlightPink,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Ways to reduce',
+                                style: TextStyle(
+                                  color: highlightPink,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            _getAdviceText(),
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.black87,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w400,
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 36),
+
+                    // Tombol Done
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Get.offAll(() => const HomeView());
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: mainGreen,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: const Text(
+                          'DONE',
                           style: TextStyle(
-                            color: mainPink,
+                            fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            fontSize: 15,
+                            letterSpacing: 1.0,
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      isPositive
-                          ? 'Start with therapy exercises to restore facial muscle strength.'
-                          : 'Stay active with facial exercises to maintain healthy facial muscle.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: mainPink.withOpacity(0.85),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                        height: 1.4,
                       ),
                     ),
+
+                    const SizedBox(height: 28),
                   ],
-                ),
-              ),
-              // Tombol Done
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 28),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      // Navigasi ke HomeView dan hapus semua halaman sebelumnya
-                      Get.offAll(() => const HomeView());
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: mainGreen,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 18),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: const Text(
-                      'DONE',
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.1,
-                      ),
-                    ),
-                  ),
                 ),
               ),
             ],
@@ -158,5 +189,26 @@ class DeteksiResult extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  // Helper method untuk menentukan text hasil
+  String _getResultText() {
+    if (isPositive) {
+      if (percentage != null) {
+        return '${percentage!.toInt()}% Positive';
+      }
+      return 'Positive';
+    } else {
+      return 'Normal';
+    }
+  }
+
+  // Helper method untuk menentukan text saran
+  String _getAdviceText() {
+    if (isPositive) {
+      return 'Start with therapy exercises to restore facial muscle strength.';
+    } else {
+      return 'Stay active with facial exercises to maintain healthy facial muscle.';
+    }
   }
 }
