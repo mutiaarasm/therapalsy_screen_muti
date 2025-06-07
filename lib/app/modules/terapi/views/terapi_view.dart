@@ -112,7 +112,7 @@ class TerapiView extends StatelessWidget {
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () {
-                        Get.offAll(() => const TerapiBellsyView());
+                        Get.to(() => const TerapiBellsyView());
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: mainGreen,

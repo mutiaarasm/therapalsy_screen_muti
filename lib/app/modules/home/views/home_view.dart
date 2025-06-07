@@ -489,19 +489,19 @@ class _HomeBottomNav extends StatelessWidget {
       onTap: (index) {
         switch (index) {
           case 0:
-            Get.offAll(() => const HomeView());
+            Get.to(() => const HomeView());
             break;
           case 1:
             // Navigasi ke deteksi
-            Get.offAll(() => const DeteksiView());
+            Get.to(() => const DeteksiView());
             break;
           case 2:
             // Navigasi ke progress
-            Get.offAll(() => const ProgressView());
+            Get.to(() => const ProgressView());
           case 3:
           
             // Navigasi ke ProfileView
-            Get.offAll(() => const ProfileView());
+            Get.to(() => const ProfileView());
             break;
         }
       },

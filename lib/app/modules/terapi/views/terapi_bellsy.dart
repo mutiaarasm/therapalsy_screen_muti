@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:therapalsy_screen_muti/app/modules/terapi/views/mulai_terapi.dart';
 
 class TerapiBellsyView extends StatelessWidget {
   const TerapiBellsyView({super.key});
@@ -10,54 +11,82 @@ class TerapiBellsyView extends StatelessWidget {
     final Color mainPink = const Color(0xFFFF7B7B);
 
     return Scaffold(
-      backgroundColor: mainGreen,
-      body: Stack(
-        children: [
-          // Gambar besar di atas
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              width: double.infinity,
-              height: 270,
-              color: Colors.transparent,
-              child: Image.asset(
-                'assets/images/terapi.png',
-                fit: BoxFit.cover,
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // AppBar custom persis seperti TerapiView
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87),
+                    onPressed: () => Get.back(),
+                  ),
+                  const Expanded(
+                    child: Center(
+                      child: Text(
+                        'THERAPY DAY 1',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 2,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Agar judul tetap center
+                  Opacity(
+                    opacity: 0,
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                      onPressed: null,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-          // Konten putih scrollable
-          Positioned(
-            top: 220,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            // Gambar header
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: mainGreen,
+                  borderRadius: BorderRadius.circular(22),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(22),
+                  child: Image.asset(
+                    'assets/images/terapi.png',
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: 300,
+                  ),
+                ),
               ),
+            ),
+            const SizedBox(height: 24),
+            // Expanded agar konten bisa discroll jika overflow
+            Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Judul dan waktu
-                    Text(
-                      'Terapi Hari Ke-1',
-                      style: TextStyle(
-                        fontSize: 19,
-                        fontWeight: FontWeight.bold,
-                        color: mainGreen,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
+                    // Waktu & deskripsi
                     Row(
                       children: [
                         Icon(Icons.access_time, color: mainPink, size: 18),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 5),
                         Text(
                           '10 MENIT',
                           style: TextStyle(
@@ -78,7 +107,7 @@ class TerapiBellsyView extends StatelessWidget {
                         height: 1.35,
                       ),
                     ),
-                    const SizedBox(height: 26),
+                    const SizedBox(height: 22),
                     Text(
                       'Gerakan Latihan Terapi',
                       style: TextStyle(
@@ -88,35 +117,35 @@ class TerapiBellsyView extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 14),
-                    // List latihan
                     _TerapiLatihanCard(
-                      image: 'assets/images/anak1.jpg',
+                      image: 'assets/images/list1.png',
                       title: 'Mouth exercises',
                       subtitle: 'lorem ipsum dolor amet hehhe',
                       mainPink: mainPink,
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
                     _TerapiLatihanCard(
-                      image: 'assets/images/anak2.jpg',
+                      image: 'assets/images/list2.png',
                       title: 'Cheeks exercises',
                       subtitle: 'lorem ipsum dolor amet hehhe',
                       mainPink: mainPink,
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
                     _TerapiLatihanCard(
                       image: '',
-                      title: 'Mouth exercises',
+                      title: 'Tongue exercises',
                       subtitle: 'lorem ipsum dolor amet hehhe',
                       mainPink: mainPink,
                       isEmpty: true,
                     ),
-                    const SizedBox(height: 32),
-                    // Tombol Start Exercises
+                    const SizedBox(height: 28),
                     SizedBox(
                       width: double.infinity,
                       height: 48,
                       child: ElevatedButton.icon(
-                        onPressed: () {},
+                        onPressed: () {
+                          Get.to(() => const MulaiTerapiView());
+                        },
                         icon: const Icon(Icons.play_arrow, size: 28),
                         label: const Text(
                           'START EXERCISES',
@@ -136,28 +165,18 @@ class TerapiBellsyView extends StatelessWidget {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 16),
                   ],
                 ),
               ),
             ),
-          ),
-          // Tombol back selalu di atas
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.only(left: 8, top: 8),
-              child: IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
-                onPressed: () => Get.back(),
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
-// Card latihan: gambar bulat kiri, judul pink, subtitle abu
 class _TerapiLatihanCard extends StatelessWidget {
   final String image;
   final String title;
@@ -189,7 +208,7 @@ class _TerapiLatihanCard extends StatelessWidget {
                 ? Container(
                     width: 44,
                     height: 44,
-                    color: Colors.grey[200],
+                    color: Colors.grey,
                   )
                 : Image.asset(
                     image,
@@ -210,6 +229,8 @@ class _TerapiLatihanCard extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                     fontSize: 14.5,
                   ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -219,6 +240,8 @@ class _TerapiLatihanCard extends StatelessWidget {
                     fontSize: 12.5,
                     fontWeight: FontWeight.w400,
                   ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
                 ),
               ],
             ),
