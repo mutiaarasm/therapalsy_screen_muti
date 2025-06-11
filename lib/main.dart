@@ -1,10 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:therapalsy_screen_muti/app/modules/progress/controllers/progress_controller.dart';
 import 'app/routes/app_pages.dart';
 
 void main() {
   runApp(const MyApp());
+  // Inisialisasi controller saat app start
+  
+  Get.put(ProgressController());
+  runApp(MyApp());
 }
+
+// Saat user login/register
+void handleNewUser() {
+  Get.find<ProgressController>().resetForNewUser();
+}
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key}); // Gunakan const dan super.key untuk best practice

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:therapalsy_screen_muti/app/modules/profile/views/profile_view.dart';
 import '../controllers/profile_controller.dart';
 
 class PrivacyPolicePage extends GetView<ProfileController> {
@@ -11,7 +12,7 @@ class PrivacyPolicePage extends GetView<ProfileController> {
         height: 10,
         margin: const EdgeInsets.only(top: 6, right: 10),
         decoration: const BoxDecoration(
-          color: Color(0xFF3DA18D),
+          color: Color(0xFF306A5A),
           shape: BoxShape.circle,
         ),
       );
@@ -25,7 +26,7 @@ class PrivacyPolicePage extends GetView<ProfileController> {
             text,
             style: const TextStyle(
               fontWeight: FontWeight.w700,
-              color: Color(0xFF3DA18D),
+              color: Color(0xFF306A5A),
               fontSize: 16,
               letterSpacing: 1,
             ),
@@ -103,31 +104,35 @@ class PrivacyPolicePage extends GetView<ProfileController> {
                 "We use the information we collect for various purposes Analyzing Bell’s Palsy symptoms To provide analysis and therapy recommendations based on the symptom data you enter.",
               ),
               const SizedBox(height: 30),
-              Center(
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => Get.back(),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF3DA18D),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(22),
+              Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 60),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        // Navigasi ke halaman edit profile
+                      Get.to(() => ProfileView());
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFF306A5A),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        elevation: 0,
                       ),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      elevation: 0,
-                    ),
-                    child: const Text(
-                      'UNDERSTAND',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w400,
-                        letterSpacing: 1.2,
-                        fontSize: 15,
+                      child: const Text(
+                        'UNDERSTAND',
+                        style: TextStyle(
+                          fontSize: 15.5,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 1.1,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
               const SizedBox(height: 18),
             ],
           ),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:therapalsy_screen_muti/app/modules/profile/views/edit_profile.dart';
+import 'package:therapalsy_screen_muti/app/modules/profile/views/faq_screen.dart';
+import 'package:therapalsy_screen_muti/app/modules/profile/views/privacy_police.dart';
 
 class ProfileView extends StatelessWidget {
   const ProfileView({super.key});
@@ -133,14 +135,14 @@ class ProfileView extends StatelessWidget {
                   icon: Icons.privacy_tip_outlined,
                   text: 'Privacy Policy',
                   onTap: () {
-                    // Get.to(() => PrivacyPolicyPage());
+                     Get.to(() => PrivacyPolicePage());
                   },
                 ),
                 _ProfileMenuItem(
                   icon: Icons.help_outline,
                   text: 'FAQ',
                   onTap: () {
-                    // Get.to(() => FaqScreen());
+                     Get.to(() => FaqScreen());
                   },
                 ),
                 _ProfileMenuItem(

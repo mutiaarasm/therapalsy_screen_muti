@@ -46,7 +46,7 @@ class HomeView extends GetView<HomeController> {
         subtitle: "Fast Scan",
         buttonText: "DETECT MY FACE",
         onPressed: () {
-        Get.offAll(() => const DeteksiView());
+        Get.to(() => const DeteksiView());
       
         },
       ),

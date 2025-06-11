@@ -1,9 +1,43 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:therapalsy_screen_muti/app/modules/terapi/views/mulai_terapi.dart';
+import 'package:http/http.dart' as http;
 
+// Model Exercise
+class Exercise {
+  final String title;
+  final String description;
+
+  Exercise({
+    required this.title,
+    required this.description,
+  });
+
+  factory Exercise.fromJson(Map<String, dynamic> json) => Exercise(
+        title: json['title'] ?? '',
+        description: json['description'] ?? '',
+      );
+}
+
+// Fungsi fetch dari backend
+Future<List<Exercise>> fetchExercises(int day) async {
+  final response = await http.get(
+    Uri.parse('http://192.168.100.16:5000/api/videos?day=$day'),
+  );
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    return (data['videos'] as List)
+        .map((e) => Exercise.fromJson(e))
+        .toList();
+  } else {
+    throw Exception('Failed to load exercises');
+  }
+}
+
+// Widget utama
 class TerapiBellsyView extends StatelessWidget {
-  const TerapiBellsyView({super.key});
+  final int day;
+  const TerapiBellsyView({super.key, required this.day});
 
   @override
   Widget build(BuildContext context) {
@@ -15,7 +49,7 @@ class TerapiBellsyView extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // AppBar custom persis seperti TerapiView
+            // AppBar custom
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               child: Row(
@@ -24,11 +58,11 @@ class TerapiBellsyView extends StatelessWidget {
                     icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87),
                     onPressed: () => Get.back(),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Center(
                       child: Text(
-                        'THERAPY DAY 1',
-                        style: TextStyle(
+                        'THERAPY DAY $day',
+                        style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 2,
@@ -37,7 +71,6 @@ class TerapiBellsyView extends StatelessWidget {
                       ),
                     ),
                   ),
-                  // Agar judul tetap center
                   Opacity(
                     opacity: 0,
                     child: IconButton(
@@ -78,36 +111,11 @@ class TerapiBellsyView extends StatelessWidget {
             // Expanded agar konten bisa discroll jika overflow
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 0),
+                padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Waktu & deskripsi
-                    Row(
-                      children: [
-                        Icon(Icons.access_time, color: mainPink, size: 18),
-                        const SizedBox(width: 5),
-                        Text(
-                          '10 MENIT',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: mainPink,
-                            fontSize: 14.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation',
-                      style: TextStyle(
-                        color: Colors.black87,
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w400,
-                        height: 1.35,
-                      ),
-                    ),
-                    const SizedBox(height: 22),
+                    // Judul gerakan
                     Text(
                       'Gerakan Latihan Terapi',
                       style: TextStyle(
@@ -117,26 +125,51 @@ class TerapiBellsyView extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 14),
-                    _TerapiLatihanCard(
-                      image: 'assets/images/list1.png',
-                      title: 'Mouth exercises',
-                      subtitle: 'lorem ipsum dolor amet hehhe',
-                      mainPink: mainPink,
-                    ),
-                    const SizedBox(height: 10),
-                    _TerapiLatihanCard(
-                      image: 'assets/images/list2.png',
-                      title: 'Cheeks exercises',
-                      subtitle: 'lorem ipsum dolor amet hehhe',
-                      mainPink: mainPink,
-                    ),
-                    const SizedBox(height: 10),
-                    _TerapiLatihanCard(
-                      image: '',
-                      title: 'Tongue exercises',
-                      subtitle: 'lorem ipsum dolor amet hehhe',
-                      mainPink: mainPink,
-                      isEmpty: true,
+                    // Daftar latihan dari backend
+                    FutureBuilder<List<Exercise>>(
+                      future: fetchExercises(day),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator());
+                        } else if (snapshot.hasError) {
+                          return Center(child: Text('Error: ${snapshot.error}'));
+                        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                          return const Center(child: Text('Tidak ada latihan untuk hari ini'));
+                        }
+                        final exercises = snapshot.data!;
+                        return Column(
+                          children: List.generate(exercises.length, (index) {
+                            final ex = exercises[index];
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: Card(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  side: BorderSide(color: mainPink.withOpacity(0.3)),
+                                ),
+                                child: ListTile(
+                                  leading: Icon(Icons.check_circle_outline, color: mainPink, size: 34),
+                                  title: Text(
+                                    ex.title,
+                                    style: TextStyle(
+                                      color: mainPink,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                  subtitle: Text(
+                                    ex.description,
+                                    style: const TextStyle(
+                                      color: Colors.black54,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }),
+                        );
+                      },
                     ),
                     const SizedBox(height: 28),
                     SizedBox(
@@ -144,7 +177,8 @@ class TerapiBellsyView extends StatelessWidget {
                       height: 48,
                       child: ElevatedButton.icon(
                         onPressed: () {
-                          Get.to(() => const MulaiTerapiView());
+                          // Navigasi ke halaman mulai latihan
+                          Get.to(() => MulaiTerapiView(day: day));
                         },
                         icon: const Icon(Icons.play_arrow, size: 28),
                         label: const Text(
@@ -177,77 +211,16 @@ class TerapiBellsyView extends StatelessWidget {
   }
 }
 
-class _TerapiLatihanCard extends StatelessWidget {
-  final String image;
-  final String title;
-  final String subtitle;
-  final Color mainPink;
-  final bool isEmpty;
-
-  const _TerapiLatihanCard({
-    required this.image,
-    required this.title,
-    required this.subtitle,
-    required this.mainPink,
-    this.isEmpty = false,
-  });
+// Jangan lupa ganti MulaiTerapiView dengan halaman latihan video Anda!
+class MulaiTerapiView extends StatelessWidget {
+  final int day;
+  const MulaiTerapiView({super.key, required this.day});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: mainPink, width: 1.2),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      child: Row(
-        children: [
-          ClipOval(
-            child: isEmpty
-                ? Container(
-                    width: 44,
-                    height: 44,
-                    color: Colors.grey,
-                  )
-                : Image.asset(
-                    image,
-                    width: 44,
-                    height: 44,
-                    fit: BoxFit.cover,
-                  ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: mainPink,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14.5,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    color: Colors.black54,
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w400,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 2,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+    return Scaffold(
+      appBar: AppBar(title: Text('Latihan Video Day $day')),
+      body: const Center(child: Text('Halaman latihan video di sini')),
     );
   }
 }

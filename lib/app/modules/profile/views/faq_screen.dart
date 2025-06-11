@@ -50,7 +50,7 @@ class _FaqScreenState extends State<FaqScreen> {
         leading: BackButton(color: Colors.black),
         centerTitle: true,
         title: const Text(
-          "F A Q",
+          "FAQ",
           style: TextStyle(
             color: Colors.black,
             fontWeight: FontWeight.bold,

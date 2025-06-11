@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
+import 'package:therapalsy_screen_muti/app/modules/progress/controllers/progress_controller.dart';
+import 'package:therapalsy_screen_muti/app/modules/progress/views/view_gallery.dart';
+import 'package:therapalsy_screen_muti/app/modules/terapi/views/terapi_bellsy.dart';
 import '../../deteksi/views/deteksi_view.dart';
 import '../../home/views/home_view.dart';
 import '../../profile/views/profile_view.dart';
@@ -10,17 +12,9 @@ class ProgressView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ProgressController ctrl = Get.put(ProgressController());
     final Color mainGreen = const Color(0xFF306A5A);
     final Color greyCircle = const Color(0xFFE0E0E0);
-
-    // Data progress harian
-    final int totalTask = 7;
-    final int completedTask = 3;
-    final double percent = completedTask / totalTask;
-
-    // Data progress per hari (dummy)
-    final List<int> progressDays = [100, 100, 88, 64, 72, 60, 30];
-    final int currentDay = 3; // 1-based, misal sekarang di day 3
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -60,7 +54,7 @@ class ProgressView extends StatelessWidget {
           ),
         ),
       ),
-      body: ListView(
+      body: Obx(() => ListView(
         padding: EdgeInsets.zero,
         children: [
           const SizedBox(height: 22),
@@ -99,7 +93,7 @@ class ProgressView extends StatelessWidget {
                         ),
                         const SizedBox(height: 7),
                         Text(
-                          '$completedTask of $totalTask tasks completed.',
+                          '${ctrl.completedTask.value} of ${ctrl.totalTask} tasks completed.',
                           style: const TextStyle(
                             color: Colors.black54,
                             fontSize: 13.2,
@@ -115,7 +109,7 @@ class ProgressView extends StatelessWidget {
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(8),
                                 child: LinearProgressIndicator(
-                                  value: percent,
+                                  value: ctrl.progressPercent,
                                   minHeight: 10,
                                   backgroundColor: Colors.grey[200],
                                   valueColor: AlwaysStoppedAnimation(mainGreen),
@@ -140,7 +134,7 @@ class ProgressView extends StatelessWidget {
                               ),
                               child: Center(
                                 child: Text(
-                                  '${(percent * 100).round()}%',
+                                  '${(ctrl.progressPercent * 100).round()}%',
                                   style: TextStyle(
                                     color: mainGreen,
                                     fontWeight: FontWeight.bold,
@@ -189,7 +183,7 @@ class ProgressView extends StatelessWidget {
                     children: [
                       Container(
                         width: 18,
-                        height: (progressDays[i] / 100) *100, // max 70 px
+                        height: (ctrl.progressDays[i] / 100) * 100, // max 100 px
                         decoration: BoxDecoration(
                           color: mainGreen,
                           borderRadius: BorderRadius.circular(7),
@@ -197,7 +191,7 @@ class ProgressView extends StatelessWidget {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        '${progressDays[i]}%',
+                        '${ctrl.progressDays[i]}%',
                         style: const TextStyle(
                           fontSize: 11,
                           color: Colors.black87,
@@ -227,33 +221,38 @@ class ProgressView extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 0),
             child: SizedBox(
-              height: 66, // Lebih tinggi agar tidak overflow
+              height: 66,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: 7,
                 padding: const EdgeInsets.symmetric(horizontal: 18),
                 physics: const BouncingScrollPhysics(),
                 itemBuilder: (context, i) {
-                  final bool isActive = i + 1 == currentDay;
-                  final bool isDone = i + 1 < currentDay;
+                  final bool isActive = i + 1 == ctrl.currentDay.value;
+                  final bool isDone = i + 1 < ctrl.currentDay.value;
                   return Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 7),
-                    child: Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        color: isActive
-                            ? mainGreen
-                            : (isDone ? mainGreen.withOpacity(0.5) : greyCircle),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text(
-                          '${i + 1}',
-                          style: TextStyle(
-                            color: isActive ? Colors.white : Colors.black38,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
+                    child: GestureDetector(
+                      onTap: isActive ? () {
+                        Get.to(() => TerapiBellsyView(day: i + 1));
+                      } : null,
+                      child: Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: isActive
+                              ? mainGreen
+                              : (isDone ? mainGreen.withOpacity(0.5) : greyCircle),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${i + 1}',
+                            style: TextStyle(
+                              color: isActive ? Colors.white : Colors.black38,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
                           ),
                         ),
                       ),
@@ -306,7 +305,9 @@ class ProgressView extends StatelessWidget {
                   SizedBox(
                     width: 170,
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Get.to(() => GalleryView());
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white,
                         foregroundColor: mainGreen,
@@ -339,7 +340,7 @@ class ProgressView extends StatelessWidget {
 
           const SizedBox(height: 24),
         ],
-      ),
+      )),
       bottomNavigationBar: _ProgressBottomNav(mainGreen: mainGreen),
     );
   }
@@ -379,16 +380,16 @@ class _ProgressBottomNav extends StatelessWidget {
       onTap: (index) {
         switch (index) {
           case 0:
-            Get.offAll(() => const HomeView());
+            Get.to(() => const HomeView());
             break;
           case 1:
-            Get.offAll(() => const DeteksiView());
+            Get.to(() => const DeteksiView());
             break;
           case 2:
-            Get.offAll(() => const ProgressView());
+            Get.to(() => const ProgressView());
             break;
           case 3:
-            Get.offAll(() => const ProfileView());
+            Get.to(() => const ProfileView());
             break;
         }
       },
