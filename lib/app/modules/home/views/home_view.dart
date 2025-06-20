@@ -1,6 +1,10 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:therapalsy_screen_muti/models/home_graphics.dart';
+import 'package:therapalsy_screen_muti/services/home_graphics_service.dart';
+
+
 
 import '../../deteksi/views/deteksi_view.dart';
 import '../../profile/views/profile_view.dart';
@@ -17,13 +21,13 @@ class HomeView extends GetView<HomeController> {
     final double cardHeight = 290;
     final double cardRadius = 22;
 
-    final List<YoutubeChannelData> dummyYoutubeData = [
-      YoutubeChannelData("Dr. Sarah Health", 25400),
-      YoutubeChannelData("Neuro Care", 18700),
-      YoutubeChannelData("Face Recovery", 14200),
-      YoutubeChannelData("Physio Therapy", 11300),
-      YoutubeChannelData("Bell's Palsy Support", 9200),
-    ];
+    // final List<YoutubeChannelData> dummyYoutubeData = [
+    //   YoutubeChannelData("Dr. Sarah Health", 25400),
+    //   YoutubeChannelData("Neuro Care", 18700),
+    //   YoutubeChannelData("Face Recovery", 14200),
+    //   YoutubeChannelData("Physio Therapy", 11300),
+    //   YoutubeChannelData("Bell's Palsy Support", 9200),
+    // ];
     
 
     // List card data
@@ -143,88 +147,79 @@ class HomeView extends GetView<HomeController> {
             
             // Grafik Batang
             const SizedBox(height: 28),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 22),
-              child: Text(
-                "Channel YouTube Terkait Bell's Palsy",
-                style: TextStyle(
-                  fontSize: 19,
-                  fontWeight: FontWeight.w700,
-                  color: mainGreen,
-                ),
-              ),
-            ),
-            const SizedBox(height: 14),
             Container(
-              height: 250,
-              padding: const EdgeInsets.all(16),
-              margin: const EdgeInsets.symmetric(horizontal: 18),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: mainGreen.withOpacity(0.22), width: 1.5),
-              ),
-              child: BarChart(
-                BarChartData(
-                  barTouchData: BarTouchData(enabled: true),
-                  titlesData: FlTitlesData(
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) => Text(
-                          '${value.toInt()}k',
-                          style: TextStyle(
-                            color: mainGreen,
-                            fontSize: 10,
-                          ),
-                        ),
-                        reservedSize: 40,
-                      ),
-                    ),
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) {
-                          final index = value.toInt();
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 8.0),
-                            child: Text(
-                              dummyYoutubeData[index].channel,
-                              style: TextStyle(
-                                color: mainGreen,
-                                fontSize: 10,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                  gridData: FlGridData(show: false),
-                  borderData: FlBorderData(
-                    border: Border.all(color: mainGreen.withOpacity(0.2)),
-                  ),
-                  barGroups: dummyYoutubeData
-                      .asMap()
-                      .entries
-                      .map(
-                        (e) => BarChartGroupData(
-                          x: e.key,
-                          barRods: [
-                            BarChartRodData(
-                              toY: e.value.viewCount.toDouble(),
-                              color: mainGreen,
-                              width: 22,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ],
-                        ),
-                      )
-                      .toList(),
-                ),
-              ),
+  height: 430,
+  padding: const EdgeInsets.all(16),
+  margin: const EdgeInsets.symmetric(horizontal: 18),
+  decoration: BoxDecoration(
+    color: Colors.white,
+    borderRadius: BorderRadius.circular(18),
+    border: Border.all(color: mainGreen.withOpacity(0.22), width: 1.5),
+  ),
+  child: FutureBuilder<HomeGraphicsData>(
+    future: fetchHomeGraphicsData(),
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return const Center(child: CircularProgressIndicator());
+      } else if (snapshot.hasError) {
+        return Center(child: Text('Error: ${snapshot.error}'));
+      } else if (!snapshot.hasData) {
+        return const Center(child: Text('No data available'));
+      }
+      final data = snapshot.data!;
+      return SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Grafik 1: 5 Video dengan Viewers Terbanyak
+            Text("5 Video dengan Viewers Terbanyak",
+                style: TextStyle(
+                    color: mainGreen,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15)),
+            const SizedBox(height: 10),
+            _simpleBarChart(
+              labels: data.topVideos.map((e) => e.title).toList(),
+              values: data.topVideos.map((e) => e.views).toList(),
+              barColor: Colors.red,
+              height: 120,
             ),
+            const SizedBox(height: 20),
+
+            // Grafik 2: Top 10 Kata Kunci Terbanyak
+            Text("Top 10 Kata Kunci Terbanyak",
+                style: TextStyle(
+                    color: mainGreen,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15)),
+            const SizedBox(height: 10),
+            _simpleBarChart(
+              labels: data.topWords.map((e) => e.kata).toList(),
+              values: data.topWords.map((e) => e.jumlah).toList(),
+              barColor: Colors.orange,
+              height: 80,
+            ),
+            const SizedBox(height: 20),
+
+            // Grafik 3: Top 10 Channel
+            Text("Top 10 Channel",
+                style: TextStyle(
+                    color: mainGreen,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15)),
+            const SizedBox(height: 10),
+            _simpleBarChart(
+              labels: data.topChannels.map((e) => e.channel).toList(),
+              values: data.topChannels.map((e) => e.count).toList(),
+              barColor: mainGreen,
+              height: 80,
+            ),
+          ],
+        ),
+      );
+    },
+  ),
+),
           ],
           
           
@@ -508,9 +503,66 @@ class _HomeBottomNav extends StatelessWidget {
     );
   }
 }
-class YoutubeChannelData {
-  final String channel;
-  final int viewCount;
-
-  YoutubeChannelData(this.channel, this.viewCount);
+Widget _simpleBarChart({
+  required List<String> labels,
+  required List<int> values,
+  required Color barColor,
+  double height = 120,
+}) {
+  return SizedBox(
+    height: height,
+    child: BarChart(
+      BarChartData(
+        barGroups: List.generate(
+          values.length,
+          (i) => BarChartGroupData(
+            x: i,
+            barRods: [
+              BarChartRodData(
+                toY: values[i].toDouble(),
+                color: barColor,
+                width: 18,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ],
+          ),
+        ),
+        titlesData: FlTitlesData(
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 40,
+              getTitlesWidget: (value, meta) => Text(
+                value.toInt().toString(),
+                style: const TextStyle(fontSize: 10),
+              ),
+            ),
+          ),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              getTitlesWidget: (value, meta) {
+                final idx = value.toInt();
+                if (idx >= 0 && idx < labels.length) {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Text(
+                      labels[idx],
+                      style: const TextStyle(fontSize: 10),
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        ),
+        gridData: FlGridData(show: false),
+        borderData: FlBorderData(show: false),
+      ),
+    ),
+  );
 }
+

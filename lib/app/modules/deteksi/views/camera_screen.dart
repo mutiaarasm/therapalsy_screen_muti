@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:get/get.dart';
+import 'package:http/http.dart' as http;
 import 'deteksi_result.dart';
 
 class CameraScreen extends StatefulWidget {
@@ -22,94 +25,65 @@ class _CameraScreenState extends State<CameraScreen> {
   int _remainingSeconds = 30;
   Timer? _timer;
 
+  // Variables untuk backend integration
+  List<String> _capturedFrames = [];
+  Timer? _frameTimer;
+  bool _isProcessing = false;
+  static const String backendUrl = 'http://192.168.141.146:5000'; // Ganti dengan IP server Anda
+
   final List<String> instructions = [
-    "Please blink your eyes",
-    "Next, pucker your lips\nas if you're going to kiss", 
+    "Kedipkan mata dan gerakan alis anda",
+    "Gerakan bibir anda dengan ",
     "Give a big smile, showing your teeth",
+  ];
+
+  final List<Color> stepColors = [
+    const Color(0xFF4285F4), // Blue
+    const Color(0xFFDB4437), // Red
+    const Color(0xFF0F9D58), // Green
   ];
 
   @override
   void initState() {
     super.initState();
-    _requestPermissionAndInitCamera();
+    _initializeCamera();
   }
 
-  Future<void> _requestPermissionAndInitCamera() async {
-    var status = await Permission.camera.status;
-    if (!status.isGranted) {
-      status = await Permission.camera.request();
-    }
+  Future<void> _initializeCamera() async {
+    final status = await Permission.camera.request();
     if (status.isGranted) {
       _cameras = await availableCameras();
-      await _startCamera(CameraLensDirection.front);
-    } else {
-      _showPermissionDialog();
-    }
-  }
-
-  void _showPermissionDialog() {
-    if (mounted) {
-      showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text('Camera Permission'),
-          content: const Text('Camera permission is required for detection.'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                Get.back();
-              },
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
-    }
-  }
-
-  Future<void> _startCamera(CameraLensDirection direction) async {
-    try {
-      final camera = _cameras?.firstWhere(
-        (c) => c.lensDirection == direction,
-        orElse: () => _cameras!.first,
-      );
-      
-      if (camera != null) {
-        await _controller?.dispose();
+      if (_cameras!.isNotEmpty) {
         _controller = CameraController(
-          camera, 
-          ResolutionPreset.high, 
-          enableAudio: false
+          _cameras![_isFrontCamera ? 1 : 0],
+          ResolutionPreset.medium,
+          enableAudio: false,
         );
         await _controller!.initialize();
-        
-        if (mounted) {
-          setState(() {
-            _isCameraInitialized = true;
-          });
-        }
+        setState(() {
+          _isCameraInitialized = true;
+        });
       }
-    } catch (e) {
-      print('Error starting camera: $e');
     }
   }
 
-  void _flipCamera() async {
-    if (_isRecording) return; // Tidak bisa ganti camera saat recording
-    
-    setState(() {
-      _isCameraInitialized = false;
-      _isFrontCamera = !_isFrontCamera;
-    });
-    await _startCamera(_isFrontCamera ? CameraLensDirection.front : CameraLensDirection.back);
-  }
+  void _toggleCamera() async {
+    if (_cameras != null && _cameras!.length > 1) {
+      setState(() {
+        _isFrontCamera = !_isFrontCamera;
+        _isCameraInitialized = false;
+      });
 
-  void _toggleRecording() {
-    if (_isRecording) {
-      _stopRecording();
-    } else {
-      _startRecording();
+      await _controller?.dispose();
+      _controller = CameraController(
+        _cameras![_isFrontCamera ? 1 : 0],
+        ResolutionPreset.medium,
+        enableAudio: false,
+      );
+      await _controller!.initialize();
+      setState(() {
+        _isCameraInitialized = true;
+      });
     }
   }
 
@@ -118,58 +92,137 @@ class _CameraScreenState extends State<CameraScreen> {
       _isRecording = true;
       _currentStep = 0;
       _remainingSeconds = 30;
+      _capturedFrames.clear();
     });
     _startDetectionTimer();
-  }
-
-  void _stopRecording() {
-    _timer?.cancel();
-    setState(() {
-      _isRecording = false;
-    });
-    _showDetectionResult();
+    _startFrameCapture();
   }
 
   void _startDetectionTimer() {
-    _timer?.cancel();
-    
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-      
-      if (_remainingSeconds > 0) {
-        setState(() {
-          _remainingSeconds--;
-          
-          // Ganti instruksi setiap 10 detik (30/3 = 10 detik per gerakan)
-          if (_remainingSeconds == 20) {
-            _currentStep = 1; // Instruksi ke-2
-          } else if (_remainingSeconds == 10) {
-            _currentStep = 2; // Instruksi ke-3
-          }
-        });
-      } else {
-        // Timer habis, stop recording
+      setState(() {
+        _remainingSeconds--;
+        if (_remainingSeconds == 20) {
+          _currentStep = 1;
+        } else if (_remainingSeconds == 10) {
+          _currentStep = 2;
+        }
+      });
+
+      if (_remainingSeconds <= 0) {
         timer.cancel();
         _stopRecording();
       }
     });
   }
 
-  void _showDetectionResult() {
+  void _startFrameCapture() {
+    _frameTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
+      if (!_isRecording) {
+        timer.cancel();
+        return;
+      }
+      _captureFrame();
+    });
+  }
+
+  Future<void> _captureFrame() async {
+    if (_controller == null || !_controller!.value.isInitialized) return;
+    
+    try {
+      final XFile image = await _controller!.takePicture();
+      final Uint8List imageBytes = await image.readAsBytes();
+      final String base64Image = base64Encode(imageBytes);
+      
+      _capturedFrames.add(base64Image);
+      print('Captured frame ${_capturedFrames.length}');
+    } catch (e) {
+      print('Error capturing frame: $e');
+    }
+  }
+
+  void _stopRecording() {
+    _timer?.cancel();
+    _frameTimer?.cancel();
+    
+    setState(() {
+      _isRecording = false;
+      _isProcessing = true;
+    });
+    
+    _processDetection();
+  }
+
+  Future<void> _processDetection() async {
+    if (_capturedFrames.isEmpty) {
+      _showError('No frames captured');
+      setState(() {
+        _isProcessing = false;
+      });
+      return;
+    }
+
+    try {
+      print('Sending ${_capturedFrames.length} frames to backend...');
+      
+      final response = await http.post(
+        Uri.parse('$backendUrl/predict_bellspalsy'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'frames': _capturedFrames,
+        }),
+      ).timeout(const Duration(seconds: 60));
+      
+      if (response.statusCode == 200) {
+        final result = jsonDecode(response.body);
+        if (result['success']) {
+          _showDetectionResult(result);
+        } else {
+          _showError(result['error'] ?? 'Unknown error');
+        }
+      } else {
+        _showError('Server error: ${response.statusCode}');
+      }
+    } catch (e) {
+      _showError('Network error: $e');
+    } finally {
+      setState(() {
+        _isProcessing = false;
+      });
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  void _showDetectionResult([Map<String, dynamic>? result]) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => const DeteksiResult(isPositive: true),
+      builder: (_) => DeteksiResult(
+        isPositive: result?['is_positive'] ?? false,
+        confidence: result?['confidence'] ?? 0.0,
+        percentage: result?['percentage'] ?? 0.0,
+        prediction: result?['prediction'] ?? 'Unknown',
+        confidenceLevel: result?['confidence_level'] ?? 'Unknown',
+        totalFrames: result?['total_frames'] ?? 0,
+        bellsPalsyFrames: result?['bellspalsy_frames'] ?? 0,
+      ),
     );
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _frameTimer?.cancel();
     _controller?.dispose();
     super.dispose();
   }
@@ -178,217 +231,199 @@ class _CameraScreenState extends State<CameraScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            // Camera Preview (Full Screen)
-            if (_isCameraInitialized && _controller != null)
-              Positioned.fill(
-                child: AspectRatio(
-                  aspectRatio: _controller!.value.aspectRatio,
+      body: _isCameraInitialized
+          ? Stack(
+              children: [
+                // Camera Preview
+                Positioned.fill(
                   child: CameraPreview(_controller!),
                 ),
-              )
-            else
-              const Center(
-                child: CircularProgressIndicator(color: Colors.white),
-              ),
-
-            // UI Overlay
-            Column(
-              children: [
-                // Header
-                Padding(
-                  padding: const EdgeInsets.only(top: 16, left: 8, right: 8),
+                
+                // Top Controls
+                Positioned(
+                  top: 50,
+                  left: 20,
+                  right: 20,
                   child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      IconButton(
-                        icon: const Icon(
-                          Icons.arrow_back_ios_new_rounded, 
-                          color: Colors.white
+                      GestureDetector(
+                        onTap: () => Get.back(),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.5),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.arrow_back,
+                            color: Colors.white,
+                            size: 24,
+                          ),
                         ),
-                        onPressed: _isRecording ? null : () => Get.back(),
                       ),
-                      const Expanded(
-                        child: Center(
-                          child: Text(
-                            'DETECTION',
-                            style: TextStyle(
+                      if (!_isRecording && !_isProcessing)
+                        GestureDetector(
+                          onTap: _toggleCamera,
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.5),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.flip_camera_ios,
                               color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 2,
-                              fontSize: 20,
+                              size: 24,
                             ),
                           ),
                         ),
-                      ),
-                      // Recording indicator
-                      if (_isRecording)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.red,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 8,
-                                height: 8,
-                                decoration: const BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              const Text(
-                                'REC',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      else
-                        const SizedBox(width: 48),
                     ],
                   ),
                 ),
 
-                // Spacer
-                const Spacer(),
-
-                // Instructions Section (hanya muncul saat recording)
-                if (_isRecording) ...[
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                // Recording Timer and Instructions
+                if (_isRecording)
+                  Positioned(
+                    top: 120,
+                    left: 20,
+                    right: 20,
                     child: Column(
                       children: [
-                        Text(
-                          instructions[_currentStep],
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            height: 1.3,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        // Timer Display
+                        // Timer
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            vertical: 6, 
-                            horizontal: 16
+                            horizontal: 20,
+                            vertical: 10,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.6),
+                            color: Colors.red,
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
-                            '$_remainingSeconds s',
+                            '$_remainingSeconds seconds',
                             style: const TextStyle(
                               color: Colors.white,
+                              fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        
+                        // Instructions
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: stepColors[_currentStep].withOpacity(0.9),
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          child: Column(
+                            children: [
+                              Text(
+                                'Step ${_currentStep + 1}/3',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                instructions[_currentStep],
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+                        
+                        // Progress Bar
+                        const SizedBox(height: 20),
+                        LinearProgressIndicator(
+                          value: (30 - _remainingSeconds) / 30,
+                          backgroundColor: Colors.white30,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            stepColors[_currentStep],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                // Start Button
+                if (!_isRecording && !_isProcessing)
+                  Positioned(
+                    bottom: 100,
+                    left: 20,
+                    right: 20,
+                    child: Column(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.9),
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          child: const Text(
+                            'Position your face in the center and ensure good lighting',
+                            style: TextStyle(fontSize: 16),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        ElevatedButton(
+                          onPressed: _startRecording,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF4285F4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 40,
+                              vertical: 16,
+                            ),
+                          ),
+                          child: const Text(
+                            'Start Bell\'s Palsy Detection',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
                             ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 40),
-                ] else ...[
-                  // Instruksi sebelum recording
+
+                // Processing Overlay
+                if (_isProcessing)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: const Text(
-                      'Follow\nthe Facial Movement Instructions!',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        height: 1.3,
-                        fontWeight: FontWeight.w400,
+                    color: Colors.black54,
+                    child: const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircularProgressIndicator(color: Colors.white),
+                          SizedBox(height: 16),
+                          Text(
+                            'Analyzing...',
+                            style: TextStyle(color: Colors.white, fontSize: 18),
+                          ),
+                          Text(
+                            'Please wait while we process your video',
+                            style: TextStyle(color: Colors.white70, fontSize: 14),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                  const SizedBox(height: 40),
-                ],
-
-                // Bottom Controls
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 40),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Switch Camera Button (disabled saat recording)
-                      GestureDetector(
-                        onTap: _isRecording ? null : _flipCamera,
-                        child: Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: _isRecording 
-                                ? Colors.white.withOpacity(0.3)
-                                : Colors.transparent,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.cameraswitch,
-                            color: _isRecording 
-                                ? Colors.white.withOpacity(0.5)
-                                : Colors.white,
-                            size: 32,
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(width: 40),
-
-                      // Record Button (Style video record)
-                      GestureDetector(
-                        onTap: _toggleRecording,
-                        child: Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            color: Colors.transparent,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.white, 
-                              width: 4
-                            ),
-                          ),
-                          child: Center(
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              width: _isRecording ? 28 : 60,
-                              height: _isRecording ? 28 : 60,
-                              decoration: BoxDecoration(
-                                color: _isRecording ? Colors.red : Colors.white,
-                                borderRadius: BorderRadius.circular(
-                                  _isRecording ? 6 : 30
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(width: 88), // Space untuk balance
-                    ],
-                  ),
-                ),
               ],
+            )
+          : const Center(
+              child: CircularProgressIndicator(),
             ),
-          ],
-        ),
-      ),
     );
   }
 }
